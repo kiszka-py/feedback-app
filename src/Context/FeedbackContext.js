@@ -1,35 +1,61 @@
-import { createContext, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 
 const FeedbackContext = createContext();
 
 export const FeedbackProvider = function ({ children }) {
-  const [feedback, setFeedback] = useState([
-    {
-      id: 1,
-      text: "Item from context",
-      rating: 8,
-    },
-  ]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [feedback, setFeedback] = useState([]);
   const [feedbackEdit, setFeedbackEdit] = useState({
     item: {},
     edit: false,
   });
 
-  function addFeedback(newFeedback) {
-    console.log(newFeedback, "from Context");
-    setFeedback([newFeedback, ...feedback]);
+  useEffect(() => {
+    async function fetchData() {
+      const response = await fetch(`/feedback?_sort=id&_order=desc`);
+      const data = await response.json();
+
+      setFeedback(data);
+      setIsLoading(false);
+    }
+    fetchData();
+  }, []);
+
+  async function addFeedback(newFeedback) {
+    console.log(newFeedback);
+    const response = await fetch(`/feedback`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(newFeedback),
+    });
+
+    const data = await response.json();
+    console.log(response, data);
+    setFeedback([data, ...feedback]);
   }
 
-  function deleteFeedback(id) {
+  async function deleteFeedback(id) {
     if (window.confirm("Are you sure you want to delete?")) {
+      await fetch(`/feedback/${id}`, { method: "DELETE" });
       setFeedback(feedback.filter((item) => item.id !== id));
     }
   }
 
-  function updateFeedback(id, updItem) {
+  async function updateFeedback(id, updItem) {
+    const response = await fetch(`feedback/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-type": "application/json",
+      },
+      body: JSON.stringify(updItem),
+    });
+    const data = await response.json();
+
     setFeedback(
       feedback.map((item) => {
-        if (item.id === id) return { ...item, ...updItem };
+        if (item.id === id) return { ...item, ...data };
         else return item;
       })
     );
@@ -51,6 +77,7 @@ export const FeedbackProvider = function ({ children }) {
       value={{
         feedback,
         feedbackEdit,
+        isLoading,
         deleteFeedback,
         addFeedback,
         editFeedback,

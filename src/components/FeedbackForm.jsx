@@ -41,7 +41,7 @@ function FeedbackForm() {
       const newFeedback = {
         text,
         rating,
-        id: Date.now(),
+        // id: Date.now(),
       };
       if (feedbackEdit.edit) {
         updateFeedback(feedbackEdit.item.id, newFeedback);
